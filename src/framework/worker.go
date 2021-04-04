@@ -4,37 +4,41 @@ import(
 	"os"
 	"os/user"
 	"strconv"
-	//"../prep"
+	"../utils"
 )
 
-const HOST_ADDRESS = "127.0.0.1:1234"
+//const HOST_ADDRESS = "127.0.0.1:1234"
 
 type Worker struct {
 	id int
 	address string
 	IsAlive bool
+	schAddress string
 
 	prepFun func(sourceDir, targetDir string)
 	trainSet []string
 	validationSet []string
 }
 
-func MakeWorker(port string, pref func(string, string)) *Worker {
+func MakeWorker(address string, schAddress string, id int, pref func(string, string)) *Worker {
 	w := &Worker{}
-	w.address =  "127.0.0.1:" +  port //ip要自己读取
+	w.id = id
+	w.address =  address//ip要自己读取
 	w.prepFun = pref
+	w.schAddress = schAddress
 
-	args := &AddWorkerArgs{w.address}
+	args := &AddWorkerArgs{w.address, w.id}
 	reply := &AddWorkerReply{}
 
-	if ok := Call("Scheduler.AddWorker", args, reply, HOST_ADDRESS); !ok {
-		DPrintf("add worker fail, please check the scheduler's status")
+	port := utils.GetPort(w.address)
+	utils.Serve(w, port)
+
+	if ok := utils.Call("Scheduler.AddWorker", args, reply, w.schAddress); !ok {
+		utils.DPrintf("add worker fail, please check the scheduler's status")
 	} else {
-		w.id = reply.ID
-		DPrintf("Success! id: %d", reply.ID)
+		utils.DPrintf("add worker successfully")
 	}
 
-	serve(w, port)
 	return w
 }
 
@@ -43,7 +47,7 @@ func (w *Worker) AssignData(args *AssignDataArgs, reply *AssignDataReply) error 
 	case Train:
 		for _, s := range(args.FileName) {
 			w.trainSet = append(w.trainSet, args.Dir + "/" + s)
-			DPrintf(args.Dir + "/" + s)
+			utils.DPrintf(args.Dir + "/" + s)
 		}
 	case Validation:
 		for _, s := range(args.FileName) {

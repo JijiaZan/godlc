@@ -2,9 +2,10 @@ package framework
 
 type AddWorkerArgs struct {
 	Address string
+	ID int
 }
 type AddWorkerReply struct {
-	ID int
+	
 }
 
 

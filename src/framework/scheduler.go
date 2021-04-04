@@ -4,6 +4,8 @@ import (
 	"sync"
 	"io/ioutil"
 	"strings"
+	"../utils"
+	"errors"
 )
 
 type WorkerStat struct {
@@ -22,15 +24,15 @@ type Scheduler struct {
 }
 
 
-func MakeScheduler(name string) *Scheduler{
+func MakeScheduler(address string, nWorkers int) *Scheduler{
 	sch := &Scheduler{}
-	sch.Name = name 
 	sch.mu = sync.Mutex{}
-	sch.WorkerStats = []WorkerStat{}
-	sch.IsWorking = false
+
+	sch.WorkerStats = make([]WorkerStat, nWorkers)
+ 	sch.IsWorking = false
 	sch.IsDone = false
 	
-	serve(sch, "1234")
+	utils.Serve(sch, "1234")
 	return sch
 }
 
@@ -38,14 +40,17 @@ func (sch *Scheduler) AddWorker(args *AddWorkerArgs, reply *AddWorkerReply) erro
 	sch.mu.Lock()
 	defer sch.mu.Unlock()
 
+	if sch.WorkerStats[args.ID].IsAlive == true {
+		return errors.New("This worker is already running")
+	}
+
 	w := WorkerStat{
 		address: args.Address,
 		IsAlive: true,
 	}
-	sch.WorkerStats = append(sch.WorkerStats, w)
-	reply.ID = len(sch.WorkerStats) - 1
 
-	DPrintf("The new worker id is: %d", reply.ID)
+	sch.WorkerStats[args.ID] = w
+	utils.DPrintf("The new worker id is: %d", args.ID)
 	return nil
 }
 
@@ -87,8 +92,8 @@ func (sch *Scheduler) Upload(args *UploadArgs, reply *UploadReply) error {
 			Dt: args.Dt,
 		}
 		adReply := &AssignDataReply{}
-		if ok := Call("Worker.AssignData", adArgs, adReply, w.address); !ok {
-			DPrintf("Assign data failed")
+		if ok := utils.Call("Worker.AssignData", adArgs, adReply, w.address); !ok {
+			utils.DPrintf("Assign data failed")
 		}
 	}
 
@@ -100,10 +105,12 @@ func (sch *Scheduler) Preprocess( args *PreprocessArgs, reply *PreprocessReply) 
 		if !w.IsAlive {
 			continue
 		}
-		if ok := Call("Worker.Preprocess", args, reply, w.address); !ok {
-			DPrintf("Preprocess data failed")
+		if ok := utils.Call("Worker.Preprocess", args, reply, w.address); !ok {
+			utils.DPrintf("Preprocess data failed")
 		}
 	}
 	return nil
 }
 
+
+func (sch *Scheduler) CheckStats(args *CheckNode)

@@ -1,0 +1,19 @@
+{
+    "scheduler":
+    {
+        "address": "127.0.0.1:1234"
+    },
+    "workers":
+    [
+        {
+            "id": "0",
+            "address": "127.0.0.1:1235",
+            "prepf": "/plugin/prep.so"
+        },
+        {
+            "id": "1",
+            "address": "127.0.0.1:1236",
+            "prepf": "/plugin/prep.so"
+        }   
+    ]
+}

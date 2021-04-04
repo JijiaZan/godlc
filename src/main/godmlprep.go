@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"../framework"
+	"../utils"
 )
 
 const ADDRESS = "127.0.0.1:1234"
@@ -36,11 +37,11 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Wrong data type\n")
 		}
 
-		if ok := framework.Call("Scheduler.Upload", args, reply, ADDRESS); !ok {
-			framework.DPrintf("upload file failed")
+		if ok := utils.Call("Scheduler.Upload", args, reply, ADDRESS); !ok {
+			fmt.Fprintf(os.Stderr, "Upload file failed")
 			os.Exit(1)
 		} else {
-			framework.DPrintf("Assign data successfully")
+			fmt.Fprintf(os.Stdout, "Assign data successfully \n")
 		}
 	case "preprocess":
 		//godmlprep preprocess train/validation
@@ -56,11 +57,11 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Wrong data type\n")
 		}
 
-		if ok := framework.Call("Scheduler.Preprocess", args, reply, ADDRESS); !ok {
-			framework.DPrintf("Preprocess data failed")
+		if ok := utils.Call("Scheduler.Preprocess", args, reply, ADDRESS); !ok {
+			fmt.Fprintf(os.Stderr, "Preprocess data failed")
 			os.Exit(1)
 		} else {
-			framework.DPrintf("Start preprocessing data")
+			fmt.Fprintf(os.Stdout, "Start preprocessing data\n")
 		}
 
 	default:
