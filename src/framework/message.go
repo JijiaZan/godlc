@@ -1,11 +1,12 @@
 package framework
 
-type AddWorkerArgs struct {
+type AddNodeArgs struct {
 	Address string
-	ID int
+	Role role
+	Rank int
 }
-type AddWorkerReply struct {
-	
+type AddNodeReply struct {
+	ID int
 }
 
 
@@ -28,3 +29,5 @@ type PreprocessArgs struct {
 	Dt DataType
 }
 type PreprocessReply struct{}
+
+type HBArgs struct{}

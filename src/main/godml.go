@@ -23,7 +23,14 @@ func main() {
 		switch os.Args[2] {
 
 		case "scheduler":
-			sch := framework.MakeScheduler(conf.Scheduler.Address, len(conf.Workers))
+			nWorkers := (len(conf.Workers)-1)*2 + 1
+			if (len(conf.Servers)-1)*2 > nWorkers {
+				nWorkers = (len(conf.Servers)-1)*2
+			}
+			nWorkers += 1
+			//utils.DPrintf("nums: %d", nWorkers)
+
+			sch := framework.MakeScheduler(conf.Scheduler.Address, nWorkers)
 			fmt.Println("Scheduler start working")
 			for !sch.IsDone {
 				time.Sleep(time.Duration(10) * time.Second)
@@ -37,7 +44,7 @@ func main() {
 			}
 			i, _ := strconv.Atoi(os.Args[3])
 			if i >= len(conf.Workers) {
-				fmt.Fprintf(os.Stderr, "The id of worker does not exist in worker \n")
+				fmt.Fprintf(os.Stderr, "The rank of worker does not exist in worker \n")
 				os.Exit(1)
 			}
 			prepFun := utils.LoadPrepPlugin("../.." + conf.Workers[i].Prepf)

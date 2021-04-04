@@ -20,24 +20,26 @@ type Worker struct {
 	validationSet []string
 }
 
-func MakeWorker(address string, schAddress string, id int, pref func(string, string)) *Worker {
+func MakeWorker(address string, schAddress string, rank int, pref func(string, string)) *Worker {
 	w := &Worker{}
-	w.id = id
 	w.address =  address//ip要自己读取
 	w.prepFun = pref
 	w.schAddress = schAddress
 
-	args := &AddWorkerArgs{w.address, w.id}
-	reply := &AddWorkerReply{}
+	args := &AddNodeArgs{w.address, WORKER, rank}
+	reply := &AddNodeReply{}
 
 	port := utils.GetPort(w.address)
 	utils.Serve(w, port)
 
-	if ok := utils.Call("Scheduler.AddWorker", args, reply, w.schAddress); !ok {
+	if ok := utils.Call("Scheduler.AddNode", args, reply, w.schAddress); !ok {
 		utils.DPrintf("add worker fail, please check the scheduler's status")
 	} else {
 		utils.DPrintf("add worker successfully")
+		w.id = reply.ID
+		utils.DPrintf("ID: %d", w.id)
 	}
+
 
 	return w
 }
@@ -58,13 +60,12 @@ func (w *Worker) AssignData(args *AssignDataArgs, reply *AssignDataReply) error 
 }
 
 func (w *Worker) Preprocess(args *PreprocessArgs, reply *PreprocessReply) error {
-
 	u, _ := user.Current()
 	dir := u.HomeDir + "/godml"
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.Mkdir(dir, os.ModePerm)
 	}
-
+	
 	dir += "/preprocessed_" + strconv.Itoa(w.id)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.Mkdir(dir, os.ModePerm)
@@ -82,10 +83,11 @@ func (w *Worker) Preprocess(args *PreprocessArgs, reply *PreprocessReply) error 
 		os.Mkdir(dir, os.ModePerm)
 	}
 
-	for _, s := range(data) {
-		w.prepFun(s, dir)
-	}
-	
+	go func() {
+		for _, s := range(data) {
+			w.prepFun(s, dir)
+		}
+	}()
 	return nil
 }
 

@@ -6,9 +6,11 @@ import (
 	"strings"
 	"../utils"
 	"errors"
+	//"strconv"
+	//"time"
 )
 
-type WorkerStat struct {
+type NodeStat struct {
 	address string
 	IsAlive bool
 }
@@ -17,18 +19,18 @@ type Scheduler struct {
 	mu sync.Mutex
 
 	Name string
-	WorkerStats []WorkerStat //true表示存活，
+	NodeStats []NodeStat //true表示存活，
 
 	IsWorking bool
 	IsDone bool
 }
 
 
-func MakeScheduler(address string, nWorkers int) *Scheduler{
+func MakeScheduler(address string, nNodes int) *Scheduler{
 	sch := &Scheduler{}
 	sch.mu = sync.Mutex{}
 
-	sch.WorkerStats = make([]WorkerStat, nWorkers)
+	sch.NodeStats = make([]NodeStat, nNodes)
  	sch.IsWorking = false
 	sch.IsDone = false
 	
@@ -36,21 +38,23 @@ func MakeScheduler(address string, nWorkers int) *Scheduler{
 	return sch
 }
 
-func (sch *Scheduler) AddWorker(args *AddWorkerArgs, reply *AddWorkerReply) error {
+func (sch *Scheduler) AddNode(args *AddNodeArgs, reply *AddNodeReply) error {
 	sch.mu.Lock()
 	defer sch.mu.Unlock()
 
-	if sch.WorkerStats[args.ID].IsAlive == true {
+	id := (int)(args.Role) + 2 * args.Rank
+
+	if sch.NodeStats[id].IsAlive == true {
 		return errors.New("This worker is already running")
 	}
-
-	w := WorkerStat{
+	w := NodeStat{
 		address: args.Address,
 		IsAlive: true,
 	}
 
-	sch.WorkerStats[args.ID] = w
-	utils.DPrintf("The new worker id is: %d", args.ID)
+	sch.NodeStats[id] = w
+	utils.DPrintf("The new worker id is: %d", id)
+	reply.ID = id
 	return nil
 }
 
@@ -61,34 +65,31 @@ func (sch *Scheduler) Upload(args *UploadArgs, reply *UploadReply) error {
         return err
     }
 	
-	assignedData := [][]string{}
-	for i := 0; i<len(sch.WorkerStats); i++ {
-		assignedData = append(assignedData, []string{})
-	}
+	assignedData := make([][]string, (len(sch.NodeStats)+1) / 2)
 
 	idx := 0
 	for idx < len(fileInfos) {
-		for i, w := range(sch.WorkerStats) {
+		for i, w := range(sch.NodeStats) {
 			if idx >= len(fileInfos) {
 				break
 			}
-			if !w.IsAlive {
+			if i & 1 == 0 || !w.IsAlive {
 				continue
 			}
 			if !strings.HasPrefix(fileInfos[idx].Name(), ".") {
-				assignedData[i] = append(assignedData[i], fileInfos[idx].Name())
+				assignedData[i/2] = append(assignedData[i/2], fileInfos[idx].Name())
 			}
 			idx ++
 		}
 	}
 
-	for i, w := range(sch.WorkerStats) {
-		if !w.IsAlive {
+	for i, w := range(sch.NodeStats) {
+		if i & 1 == 0 || !w.IsAlive {
 			continue
 		}
 		adArgs := &AssignDataArgs {
 			Dir: args.Dir,
-			FileName: assignedData[i],
+			FileName: assignedData[i/2],
 			Dt: args.Dt,
 		}
 		adReply := &AssignDataReply{}
@@ -101,8 +102,8 @@ func (sch *Scheduler) Upload(args *UploadArgs, reply *UploadReply) error {
 }
 
 func (sch *Scheduler) Preprocess( args *PreprocessArgs, reply *PreprocessReply) error {
-	for _, w := range(sch.WorkerStats) {
-		if !w.IsAlive {
+	for id, w := range(sch.NodeStats) {
+		if id & 1 == 0 || !w.IsAlive {
 			continue
 		}
 		if ok := utils.Call("Worker.Preprocess", args, reply, w.address); !ok {
@@ -113,4 +114,5 @@ func (sch *Scheduler) Preprocess( args *PreprocessArgs, reply *PreprocessReply) 
 }
 
 
-func (sch *Scheduler) CheckStats(args *CheckNode)
+// func (sch *Scheduler) CheckStats(args *CheckNode)
+//func (sch *Scheduler) HeatBeat(args *HBArgs)

@@ -12,6 +12,7 @@ import (
 type mainConfig struct {
 	Scheduler SchInfo `json:"scheduler"`
 	Workers []WorkerNodeInfo `json:"workers"`
+	Servers  []ServerNodeInfo `json:"servers"`
 }
 
 type SchInfo struct {
@@ -19,6 +20,12 @@ type SchInfo struct {
 }
 
 type WorkerNodeInfo struct {
+	ID string `json:"id"`
+	Address string `json:address`
+	Prepf string `json:prepf`
+}
+
+type ServerNodeInfo struct {
 	ID string `json:"id"`
 	Address string `json:address`
 	Prepf string `json:prepf`
