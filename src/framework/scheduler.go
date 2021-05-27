@@ -4,22 +4,26 @@ import (
 	"sync"
 	"io/ioutil"
 	"strings"
-	"../utils"
+	"github.com/JijiaZan/godml/utils"
 	"errors"
 	//"strconv"
-	//"time"
+	"time"
 )
+
+const MaxHeartbeatInterval = time.Millisecond * 100
 
 type NodeStat struct {
 	address string
 	IsAlive bool
+	HBTimer *time.Timer
 }
 
 type Scheduler struct {
 	mu sync.Mutex
 
-	Name string
-	NodeStats []NodeStat //true表示存活，
+	TaskName string
+	NodeStats []*NodeStat //true表示存活
+	Phase phase
 
 	IsWorking bool
 	IsDone bool
@@ -30,11 +34,11 @@ func MakeScheduler(address string, nNodes int) *Scheduler{
 	sch := &Scheduler{}
 	sch.mu = sync.Mutex{}
 
-	sch.NodeStats = make([]NodeStat, nNodes)
+	sch.NodeStats = make([]*NodeStat, nNodes)
  	sch.IsWorking = false
 	sch.IsDone = false
 	
-	utils.Serve(sch, "1234")
+	utils.Serve(sch, utils.GetPort(address))
 	return sch
 }
 
@@ -44,16 +48,32 @@ func (sch *Scheduler) AddNode(args *AddNodeArgs, reply *AddNodeReply) error {
 
 	id := (int)(args.Role) + 2 * args.Rank
 
-	if sch.NodeStats[id].IsAlive == true {
+	if sch.NodeStats[id] != nil && sch.NodeStats[id].IsAlive {
 		return errors.New("This worker is already running")
 	}
-	w := NodeStat{
+	n := &NodeStat{
 		address: args.Address,
 		IsAlive: true,
+		HBTimer: time.NewTimer(MaxHeartbeatInterval),
 	}
 
-	sch.NodeStats[id] = w
-	utils.DPrintf("The new worker id is: %d", id)
+	sch.NodeStats[id] = n
+
+	// 心跳检测
+	go func(id int, n *NodeStat) {
+		<-n.HBTimer.C
+		n.IsAlive = false
+		utils.DPrintf("node %d has dead!", id)
+	}(id, n)
+
+	//log
+	var r string
+	if args.Role == 0 {
+		r = "server"
+	} else if args.Role == 1 {
+		r = "worker"
+	}
+	utils.DPrintf("The new %s id is: %d", r, id)
 	reply.ID = id
 	return nil
 }
@@ -115,4 +135,10 @@ func (sch *Scheduler) Preprocess( args *PreprocessArgs, reply *PreprocessReply) 
 
 
 // func (sch *Scheduler) CheckStats(args *CheckNode)
-//func (sch *Scheduler) HeatBeat(args *HBArgs)
+func (sch *Scheduler) Heartbeat(args *HeartbeatArgs, reply *HeartbeatReply) error{
+	sch.NodeStats[args.ID].HBTimer.Reset(MaxHeartbeatInterval)
+	if args.Msg != "" {
+		utils.DPrintf(args.Msg)
+	}
+	return nil
+}

@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"../framework"
-	"../utils"
+	"github.com/JijiaZan/godml/framework"
+	"github.com/JijiaZan/godml/utils"
 )
 
 const ADDRESS = "127.0.0.1:1234"
@@ -67,5 +67,4 @@ func main() {
 	default:
 		fmt.Fprintf(os.Stderr, "command not found \n")
 	}
-
 }

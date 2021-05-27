@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package pyserver;
+option go_package = "github.com/JijiaZan/godml/src/pyserver";
+
+service Worker {
+    rpc Push (PushRequest) returns (PushReply) {}
+    rpc Pull (PullRequest) returns (PullReply) {}
+}
+
+message PushRequest {
+    int32 epoch = 1;
+    repeated layer layers = 2;
+}
+
+message layer {
+    string name = 1;
+    repeated int32 dim_bias = 2;
+    repeated float bias = 3;
+    repeated int32 dim_kernel = 4;
+    repeated float kernel = 5;
+}
+
+message PushReply {
+    bool success = 1;
+}
+
+message PullRequest {
+    int32 epoch = 1;
+}
+
+message PullReply {
+    repeated layer layers = 1;
+}

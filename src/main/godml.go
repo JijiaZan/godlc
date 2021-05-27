@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 	"time"
-	"../framework"
-	"../utils"
+	"github.com/JijiaZan/godml/framework"
+	"github.com/JijiaZan/godml/utils"
 	"strconv"
 )
 
@@ -32,7 +32,7 @@ func main() {
 
 			sch := framework.MakeScheduler(conf.Scheduler.Address, nWorkers)
 			fmt.Println("Scheduler start working")
-			for !sch.IsDone {
+			for sch.Phase != framework.FINISHED {
 				time.Sleep(time.Duration(10) * time.Second)
 			}
 			fmt.Println("Scheduler stop working")
@@ -47,12 +47,36 @@ func main() {
 				fmt.Fprintf(os.Stderr, "The rank of worker does not exist in worker \n")
 				os.Exit(1)
 			}
+
 			prepFun := utils.LoadPrepPlugin("../.." + conf.Workers[i].Prepf)
-			w := framework.MakeWorker(conf.Workers[i].Address, conf.Scheduler.Address, i, prepFun)
-			for !w.IsAlive {
+
+			sAdress := make([]string, len(conf.Servers))
+			for i, s := range(conf.Servers) {
+				sAdress[i] = s.Address
+			}
+
+			w := framework.MakeWorker(conf.Workers[i].Address, conf.Scheduler.Address, i, prepFun, sAdress)
+			for w.IsAlive {
 				time.Sleep(time.Duration(10) * time.Second)
 			}
-		//case "server":
+
+		case "server":
+			if len(os.Args) < 4 {
+				fmt.Fprintf(os.Stderr, "You should provide the rank of server \n")
+				os.Exit(1)
+			}
+			i, _ := strconv.Atoi(os.Args[3])
+			if i >= len(conf.Servers) {
+				fmt.Fprintf(os.Stderr, "The rank of worker does not exist in server \n")
+				os.Exit(1)
+			}
+
+			nWorker := len(conf.Workers)
+			tao, _ := strconv.Atoi(conf.Scheduler.Consistency)
+			s := framework.MakeServer(conf.Servers[i].Address, conf.Scheduler.Address, i, nWorker, tao)
+			for s.IsAlive {
+				time.Sleep(time.Duration(10) * time.Second)
+			}
 		}
 
 	// case "addWorker":

@@ -1,7 +1,8 @@
 {
     "scheduler":
     {
-        "address": "127.0.0.1:1234"
+        "address": "127.0.0.1:1234",
+        "consistency": "100"
     },
     "workers":
     [
@@ -12,11 +13,20 @@
         },
         {
             "index": "1",
-            "address": "127.0.0.1:1236",
+            "address": "127.0.0.1:1238",
             "prepf": "/plugin/prep.so"
-        }   
+        },
+        {
+            "index": "2",
+            "address": "127.0.0.1:1240",
+            "prepf": "/plugin/prep.so"
+        }     
     ],
     "servers":
     [
+        {
+            "index": "0",
+            "address": "127.0.0.1:9000"
+        }
     ]
 }

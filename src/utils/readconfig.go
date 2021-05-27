@@ -16,19 +16,20 @@ type mainConfig struct {
 }
 
 type SchInfo struct {
-	Address string `json:address`
+	Address string `json:"address"`
+	Consistency string `json:"consistency"`
 }
 
 type WorkerNodeInfo struct {
-	ID string `json:"id"`
-	Address string `json:address`
-	Prepf string `json:prepf`
+	ID string `json:"index"`
+	Address string `json:"address"`
+	Prepf string `json:"prepf"`
 }
 
 type ServerNodeInfo struct {
-	ID string `json:"id"`
-	Address string `json:address`
-	Prepf string `json:prepf`
+	ID string `json:"index"`
+	Address string `json:"address"`
+	Prepf string `json:"prepf"`
 }
 
 
